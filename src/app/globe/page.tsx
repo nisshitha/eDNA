@@ -29,7 +29,8 @@ export default function GlobePage() {
   const [polygons, setPolygons] = useState<HabitatPolygon[]>([]);
   const [arcs, setArcs] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
-  const [hoveredPoint, setHoveredPoint] = useState<SpeciesPoint | null>(null); // State for info panel
+  // CHANGED: Renamed state to reflect "clicking" instead of "hovering"
+  const [selectedPoint, setSelectedPoint] = useState<SpeciesPoint | null>(null);
   const [panelPosition, setPanelPosition] = useState({ x: 0, y: 0 }); // State for panel position
 
   // Ref to control the globe's animation loop
@@ -130,15 +131,15 @@ export default function GlobePage() {
     );
   }
 
-  // --- Function to handle interactions and position the info panel ---
-  const handleInteraction = (point: SpeciesPoint | null) => {
+  // --- CHANGED: Renamed function to reflect selection action ---
+  const handlePointSelect = (point: SpeciesPoint | null) => {
     if (point) {
       const screenCoords = globeRef.current?.getScreenCoords(point.lat, point.lng);
       if (screenCoords) {
         setPanelPosition({ x: screenCoords.x, y: screenCoords.y });
       }
     }
-    setHoveredPoint(point);
+    setSelectedPoint(point);
   };
 
   return (
@@ -148,8 +149,8 @@ export default function GlobePage() {
         <p className="text-sm text-gray-300">Found {points.length} potential species origins.</p>
       </div>
 
-      {/* Interactive Information Panel */}
-      {hoveredPoint && (
+      {/* CHANGED: Panel now depends on selectedPoint, not hoveredPoint */}
+      {selectedPoint && (
         <div
           className="absolute z-20 w-64 rounded-lg border border-cyan-400/50 bg-gray-900/70 p-4 text-white shadow-lg backdrop-blur-lg transition-opacity duration-300"
           style={{
@@ -159,15 +160,15 @@ export default function GlobePage() {
             pointerEvents: 'auto', // Allow interaction with the panel
           }}
         >
-          <button onClick={() => setHoveredPoint(null)} className="absolute top-2 right-2 text-gray-400 hover:text-white">
+          <button onClick={() => setSelectedPoint(null)} className="absolute top-2 right-2 text-gray-400 hover:text-white">
             <FiX size={18} />
           </button>
-          <h3 className="text-lg font-bold text-cyan-300">{hoveredPoint.species}</h3>
+          <h3 className="text-lg font-bold text-cyan-300">{selectedPoint.species}</h3>
           <p className="text-sm text-gray-300">
-            Confidence Score: <span className="font-semibold text-yellow-400">{(hoveredPoint.confidence * 100).toFixed(0)}%</span>
+            Confidence Score: <span className="font-semibold text-yellow-400">{(selectedPoint.confidence * 100).toFixed(0)}%</span>
           </p>
           <a
-            href={hoveredPoint.wiki}
+            href={selectedPoint.wiki}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 inline-block rounded-md bg-cyan-600/50 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-cyan-500/50"
@@ -186,8 +187,8 @@ export default function GlobePage() {
         atmosphereAltitude={0.2}
 
         // --- Species Beacons (replacing points) ---
-        pointsData={points} // CHANGED from customLayerData
-        pointThreeObject={(d: any) => { // CHANGED from customThreeObject
+        pointsData={points}
+        pointThreeObject={(d: any) => {
           const group = new THREE.Group();
           const color = d.species === "Orca" ? 0x00ffff : d.species === "Yellowfin Tuna" ? 0xffa500 : 0x00ff00;
           const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6 });
@@ -199,7 +200,7 @@ export default function GlobePage() {
           group.add(cone);
           return group;
         }}
-        pointThreeObjectUpdate={(obj: any, d: any) => { // CHANGED from customThreeObjectUpdate
+        pointThreeObjectUpdate={(obj: any, d: any) => {
           const time = new Date().getTime();
           const pulse = Math.sin(time / 500 + d.lat) * 0.5 + 0.5;
           const scale = 0.5 + d.confidence * (0.5 + pulse * 0.5);
@@ -222,8 +223,9 @@ export default function GlobePage() {
         polygonLabel={(poly: any) => `<b>${poly.name}</b>`}
 
         // --- Interactivity ---
-        onPointClick={(d, event) => handleInteraction(d as SpeciesPoint | null)} // CHANGED from onCustomLayerClick
-        onPointHover={(d, prevD) => handleInteraction(d as SpeciesPoint | null)} // CHANGED from onCustomLayerHover
+        onPointClick={(d) => handlePointSelect(d as SpeciesPoint)} // CHANGED: Now uses click to select
+        onPointHover={() => {}} // REMOVED: Hover no longer controls the main panel
+        onGlobeClick={() => setSelectedPoint(null)} // NEW: Click the globe to deselect/close panel
       />
     </div>
   );
