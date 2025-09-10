@@ -2,7 +2,17 @@
 
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiUploadCloud, FiFileText, FiX, FiArrowLeft } from 'react-icons/fi';
+import Link from 'next/link'; // Import Link
+import { 
+  FiUploadCloud, 
+  FiFileText, 
+  FiX, 
+  FiArrowLeft,
+  FiHome,        // Import nav icons
+  FiInfo, 
+  FiHelpCircle,
+  FiLoader
+} from 'react-icons/fi';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -37,6 +47,7 @@ export default function UploadPage() {
     if (!selectedFile) return;
     setIsLoading(true);
     setError(null);
+    localStorage.removeItem('analysisResult'); // Clear old data
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -61,17 +72,23 @@ export default function UploadPage() {
         <div className="absolute inset-0 bg-black opacity-60"></div> 
       </div>
 
-      {/* Header */}
+      {/* --- MODIFIED: Header with correct links --- */}
       <header className="relative z-10 bg-blue-900/80 backdrop-blur-sm shadow-lg">
         <nav className="container mx-auto flex items-center justify-between p-4">
-          <div className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.592 1M12 8c-.112 0-.224.016-.335.035M2.004 15.197a4.5 4.5 0 011.026-.06C6.11 14.885 8.761 14 12 14c3.239 0 5.89.884 8.97.944a4.5 4.5 0 011.026.06l-.412 1.633a9.75 9.75 0 01-18.128 0l-.412-1.633zM12 21c-3.132 0-6.104-.633-8.875-1.761M12 21c3.132 0 6.104-.633 8.875-1.761M12 21v-3"></path></svg>
             <span className="text-xl font-bold">DEEPSEQ</span>
-          </div>
+          </Link>
           <div className="flex space-x-6">
-            <a href="#" className="flex items-center hover:text-blue-200">Home</a>
-            <a href="#" className="flex items-center hover:text-blue-200">About us</a>
-            <a href="#" className="flex items-center hover:text-blue-200">Help</a>
+            <Link href="/" className="flex items-center hover:text-blue-200">
+                <FiHome className="mr-1"/>Home
+            </Link>
+            <Link href="/about" className="flex items-center hover:text-blue-200">
+                <FiInfo className="mr-1"/>About us
+            </Link>
+            <Link href="/help" className="flex items-center hover:text-blue-200">
+                <FiHelpCircle className="mr-1"/>Help
+            </Link>
           </div>
         </nav>
       </header>
@@ -86,7 +103,7 @@ export default function UploadPage() {
         <div className="w-full max-w-xl rounded-lg bg-blue-900/80 p-8 text-white shadow-2xl backdrop-blur-md">
           <h2 className="mb-6 text-xl font-bold text-center">File Upload</h2>
           
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".fasta,.fastq,.fa,.fna,.csv,.xlsx" />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".fasta,.fastq,.fa,.fna" />
           
           <div
             onClick={handleDropZoneClick} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
@@ -100,7 +117,7 @@ export default function UploadPage() {
                 <p className="font-semibold">{selectedFile.name}</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeFile(); }}
-                  className="mt-4 flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-300 hover:bg-red-500/40"
+                  className="mt-4 flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-30 sermibold text-red-300 hover:bg-red-500/40"
                 > <FiX /> Remove </button>
               </div>
             ) : (
@@ -112,7 +129,7 @@ export default function UploadPage() {
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-300">
-            <p>Formats accepted are .csv and .xlsx</p>
+            <p>Formats accepted are .fasta and .fastq</p>
           </div>
           
           <div className="mt-6 text-center text-sm text-gray-300">
@@ -132,6 +149,7 @@ export default function UploadPage() {
               onClick={handleContinue} disabled={!selectedFile || isLoading}
               className="flex items-center justify-center rounded-md bg-blue-600 px-6 py-2 font-semibold transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-gray-400"
             >
+              {isLoading && <FiLoader className="animate-spin mr-2" />}
               {isLoading ? 'Analyzing...' : 'Continue'}
             </button>
           </div>
