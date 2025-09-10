@@ -1,110 +1,73 @@
-'use client';
+import Link from 'next/link';
+import { FiHome, FiInfo, FiHelpCircle, FiArrowRight } from 'react-icons/fi'; // Icons for navigation and button
 
-import React, { useState } from 'react';
-import Link from 'next/link'; // NEW: Import the Link component
-import { useRouter } from 'next/navigation'; // NEW: Import the router hook
-import { FaGoogle, FaApple } from 'react-icons/fa';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
-
-export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter(); // NEW: Initialize the router
-
-  // NEW: Function to handle form submission and other navigations
-  const handleNavigateToLanding = (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); // Prevent default form submission if it's an event
-    router.push('/upload');
-  };
-
+export default function HomePage() {
   return (
-    <main className="relative h-screen w-screen font-sans">
+    <div className="relative min-h-screen bg-gray-900 text-white overflow-hidden">
+      {/* Background Image Container */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/sea.jpg')" }}
-        aria-hidden="true"
-      />
-      <div className="relative z-10 flex h-full items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-2xl bg-white/20 p-8 text-gray-800 shadow-lg backdrop-blur-md">
-          <h1 className="mb-8 text-center text-4xl" style={{ fontFamily: 'serif', letterSpacing: '0.2em' }}>
-            POCKET PAUSE
-          </h1>
+        className="absolute inset-0 z-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/one.jpg')" }} // Adjust path if your image is in public/ directly: url('/one.jpg')
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black opacity-50"></div> 
+      </div>
 
-          {/* CHANGED: Added onSubmit handler to the form */}
-          <form onSubmit={handleNavigateToLanding}>
-            <div className="mb-4">
-              <label htmlFor="mobile" className="mb-1 block text-sm text-gray-700">Enter your mobile number</label>
-              <div className="flex items-center rounded-md bg-gray-200/50 p-2.5">
-                <span className="border-r border-gray-400 pr-3 text-gray-600">+91</span>
-                <input
-                  type="tel"
-                  id="mobile"
-                  placeholder="1712345678"
-                  className="w-full bg-transparent pl-3 text-gray-800 placeholder-gray-500 focus:outline-none"
-                />
-              </div>
-            </div>
-            <div className="mb-2">
-              <label htmlFor="password"className="mb-1 block text-sm text-gray-700">Enter your password</label>
-              <div className="relative flex items-center rounded-md bg-gray-200/50 p-2.5">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  placeholder="**********"
-                  className="w-full bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-gray-600"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-            </div>
-            <a href="#" className="block text-right text-xs text-gray-700 hover:underline">
-              forgot password?
-            </a>
-            <button
-              type="submit"
-              className="mt-6 w-full rounded-md bg-black py-3 text-lg font-semibold text-white transition hover:bg-gray-800"
+      {/* Header / Navbar */}
+      <header className="relative z-10 bg-blue-900 bg-opacity-80 backdrop-blur-sm shadow-lg">
+        <nav className="container mx-auto flex items-center justify-between p-4">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            {/* You can replace this with an actual logo image if you have one */}
+            <svg
+              className="h-8 w-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              Login
-            </button>
-          </form>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.592 1M12 8c-.112 0-.224.016-.335.035M2.004 15.197a4.5 4.5 0 011.026-.06C6.11 14.885 8.761 14 12 14c3.239 0 5.89.884 8.97.944a4.5 4.5 0 011.026.06l-.412 1.633a9.75 9.75 0 01-18.128 0l-.412-1.633zM12 21c-3.132 0-6.104-.633-8.875-1.761M12 21c3.132 0 6.104-.633 8.875-1.761M12 21v-3"
+              />
+            </svg>
+            <span className="text-xl font-bold">DEEPSEQ</span>
+          </div>
 
-          <p className="mt-4 text-center text-sm text-gray-700">
-            Don't have an account?{' '}
-            {/* CHANGED: Replaced <a> with <Link> for client-side navigation */}
-            <Link href="/signup" className="font-semibold hover:underline">
-              Sign Up
+          {/* Navigation Links */}
+          <div className="flex space-x-6">
+            <Link href="/" className="flex items-center text-white hover:text-blue-200 transition-colors">
+              <FiHome className="mr-1" /> Home
             </Link>
-          </p>
-          
-          <div className="mt-6 space-y-3">
-             {/* CHANGED: Added onClick handler to navigate */}
-            <button 
-              onClick={() => handleNavigateToLanding()}
-              className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white/80 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50">
-              <FaGoogle /> Continue with Google
-            </button>
-            <button 
-              onClick={() => handleNavigateToLanding()}
-              className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white/80 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50">
-              <FaApple /> Continue with Apple
-            </button>
+            <Link href="/about" className="flex items-center text-white hover:text-blue-200 transition-colors">
+              <FiInfo className="mr-1" /> About us
+            </Link>
+            <Link href="/help" className="flex items-center text-white hover:text-blue-200 transition-colors">
+              <FiHelpCircle className="mr-1" /> Help
+            </Link>
           </div>
-          
-          <div className="my-6 text-center text-sm text-gray-600">
-            or
-          </div>
+        </nav>
+      </header>
 
-          {/* CHANGED: Replaced <a> with <Link> */}
-          <Link href="/upload" className="block text-center text-sm font-medium text-gray-700 hover:underline">
-            Continue as Guest
+      {/* Main Content Area */}
+      <main className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4">
+        {/* Replace this div with the following corrected styles */}
+        <div className="bg-white rounded-lg p-8 md:p-12 text-center max-w-lg w-full shadow-xl">
+          <h1 className="text-5xl font-extrabold text-gray-800 leading-tight mb-6"> {/* Changed text color to gray-800 */}
+            DeepSeq
+          </h1>
+          <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto"> {/* Changed text color to gray-600 */}
+            AI-powered platform that links environmental DNA (eDNA) to known
+            fish and marine species. It also flags unknown DNA signatures,
+            revealing insights into undiscovered biodiversity in the deep sea.
+          </p>
+          <Link href="/login" className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg"> {/* Changed button style to match header */}
+            Try it <FiArrowRight className="ml-3 h-6 w-6" />
           </Link>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

@@ -1,233 +1,187 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import * as THREE from "three";
-import { FiX } from "react-icons/fi"; // Import a close icon
+import { FiBarChart2, FiAlertTriangle, FiChevronDown } from "react-icons/fi";
 
-// Dynamically import react-globe.gl (disable SSR)
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
-// Define the structure of our data points
-interface SpeciesPoint {
-  lat: number;
-  lng: number;
+// --- Helper Function ---
+const generateSpeciesConnections = (speciesData: { species: string; locations: { lat: number; lng: number }[] }) => {
+  const hotspots = speciesData.locations.slice(0, 10);
+  if (hotspots.length < 2) return [];
+
+  const arcs = [];
+  for (let i = 0; i < hotspots.length; i++) {
+    for (let j = i + 1; j < hotspots.length; j++) {
+      const start = hotspots[i];
+      const end = hotspots[j];
+      
+      const distance = Math.sqrt(Math.pow(start.lat - end.lat, 2) + Math.pow(start.lng - end.lng, 2));
+      const similarity = Math.max(0.1, 1 - distance / 180);
+
+      arcs.push({
+        startLat: start.lat,
+        startLng: start.lng,
+        endLat: end.lat,
+        endLng: end.lng,
+        color: `rgba(0, 255, 150, ${similarity * 0.7})`,
+        stroke: similarity * 0.6,
+      });
+    }
+  }
+  return arcs;
+};
+
+// --- Type Definitions ---
+interface SpeciesGeoData {
   species: string;
-  wiki: string;
-  confidence: number;
+  locations: { lat: number; lng: number }[];
 }
 
-interface HabitatPolygon {
-  lat: number;
-  lng: number;
-  radius: number;
-  name: string;
-}
-
+// --- Main Component ---
 export default function GlobePage() {
-  const [points, setPoints] = useState<SpeciesPoint[]>([]);
-  const [polygons, setPolygons] = useState<HabitatPolygon[]>([]);
+  const [allGeoData, setAllGeoData] = useState<SpeciesGeoData[]>([]);
+  const [selectedSpecies, setSelectedSpecies] = useState<string>('');
+  const [heatmapPoints, setHeatmapPoints] = useState<any[]>([]);
   const [arcs, setArcs] = useState<any[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(true);
-  // CHANGED: Renamed state to reflect "clicking" instead of "hovering"
-  const [selectedPoint, setSelectedPoint] = useState<SpeciesPoint | null>(null);
-  const [panelPosition, setPanelPosition] = useState({ x: 0, y: 0 }); // State for panel position
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const globeRef = useRef<any>();
 
-  // Ref to control the globe's animation loop
-  const globeRef = useRef<any>(null);
-
-  // --- EFFECT 1: Simulate Data Loading and Analysis ---
   useEffect(() => {
-    // Simulate a delay for backend processing
-    const timer = setTimeout(() => {
-      // --- Hardcoded Data (as a stand-in for your AI model's output) ---
-      const speciesData: SpeciesPoint[] = [
-        { lat: -75, lng: 0, species: "Orca", wiki: "https://en.wikipedia.org/wiki/Orca", confidence: 0.9 },
-        { lat: 30, lng: -40, species: "Yellowfin Tuna", wiki: "https://en.wikipedia.org/wiki/Yellowfin_tuna", confidence: 0.7 },
-        { lat: 10, lng: 100, species: "Clownfish", wiki: "https://en.wikipedia.org/wiki/Clownfish", confidence: 0.6 },
-      ];
-      setPoints(speciesData);
+    try {
+      const resultString = localStorage.getItem('analysisResult');
+      if (!resultString) throw new Error("No analysis data found. Please upload a file first.");
 
-      const habitatData: HabitatPolygon[] = [
-        { lat: -75, lng: 0, radius: 15, name: "Orca Habitat" },
-        { lat: 30, lng: -40, radius: 10, name: "Tuna Habitat" },
-      ];
-      setPolygons(habitatData);
+      const result = JSON.parse(resultString);
 
-      // --- Create animated arcs from an analysis center to each species ---
-      const analysisCenter = { lat: 37.7749, lng: -122.4194 }; // San Francisco
-      const arcData = speciesData.map(point => ({
-        startLat: analysisCenter.lat,
-        startLng: analysisCenter.lng,
-        endLat: point.lat,
-        endLng: point.lng,
-        color: ['rgba(0, 255, 255, 0.4)', 'rgba(255, 255, 0, 0.4)'],
-        label: `Analysis Result: ${point.species}`
-      }));
-      setArcs(arcData);
+      if (result.geo_profiles && result.geo_profiles.length > 0) {
+        // --- CORRECTED LOGIC: This now properly handles the full list of coordinates ---
+        const geoData: SpeciesGeoData[] = result.geo_profiles.map((profile: any) => {
+          const locations = Array.isArray(profile.coordinates)
+            ? profile.coordinates.map((coords: [number, number]) => ({ lat: coords[0], lng: coords[1] }))
+            : [];
+            
+          return {
+            species: profile.scientific_name,
+            locations: locations
+          };
+        }).filter((s: any) => s.locations.length > 0);
 
-      setIsAnalyzing(false); // End loading state
-    }, 3000); // 3-second delay
+        if (geoData.length === 0) {
+          throw new Error("Analysis complete, but no valid coordinates were found for the identified species.");
+        }
 
-    return () => clearTimeout(timer);
+        setAllGeoData(geoData);
+        setSelectedSpecies(geoData[0].species);
+
+      } else {
+        throw new Error("Analysis complete, but no geographic data could be found for the identified species.");
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-
-  // --- EFFECT 2: Animate Habitat Polygons ---
   useEffect(() => {
-    // This effect creates a "breathing" animation for the habitat polygons
-    const globe = globeRef.current;
-    if (!globe || isAnalyzing) return;
-
-    let frameId: number;
-    const animate = () => {
-      const time = new Date().getTime();
-      // Oscillate altitude between 0.01 and 0.06 over ~4 seconds
-      const altitude = 0.01 + (Math.sin(time / 1000) * 0.5 + 0.5) * 0.05;
-      globe.polygonAltitude(() => altitude);
-      frameId = requestAnimationFrame(animate);
+    if (!selectedSpecies || allGeoData.length === 0) {
+      setHeatmapPoints([]);
+      setArcs([]);
+      return;
     };
 
-    animate();
+    const speciesData = allGeoData.find(s => s.species === selectedSpecies);
+    if (speciesData) {
+      const pointsForHeatmap = speciesData.locations.map(loc => [loc.lat, loc.lng, 0.1]);
+      setHeatmapPoints(pointsForHeatmap);
 
-    return () => cancelAnimationFrame(frameId);
-  }, [isAnalyzing]);
-
-
-  // --- UI Rendering ---
-  if (isAnalyzing) {
+      const connectionArcs = generateSpeciesConnections(speciesData);
+      setArcs(connectionArcs);
+    }
+  }, [selectedSpecies, allGeoData]);
+  
+  // --- Render Logic ---
+  if (isLoading) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-gray-900 text-white">
-        <div className="dna-loader"></div>
-        <h1 className="mt-8 text-2xl font-semibold tracking-wider">Analyzing DNA Sample...</h1>
-        <p className="text-gray-400">Mapping genetic origins across the globe.</p>
-        <style jsx>{`
-          .dna-loader {
-            width: 80px;
-            height: 80px;
-            border: 4px solid #4A5568;
-            border-radius: 50%;
-            position: relative;
-            animation: rotate 1s linear infinite;
-          }
-          .dna-loader::before, .dna-loader::after {
-            content: "";
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #4299E1;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-          }
-          .dna-loader::after {
-            animation: helix 1s ease-in-out infinite alternate;
-          }
-          @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-          @keyframes helix { 0% { top: 25%; } 100% { top: 75%; } }
-        `}</style>
+        <p>Loading Analysis Data...</p>
       </div>
     );
   }
 
-  // --- CHANGED: Renamed function to reflect selection action ---
-  const handlePointSelect = (point: SpeciesPoint | null) => {
-    if (point) {
-      const screenCoords = globeRef.current?.getScreenCoords(point.lat, point.lng);
-      if (screenCoords) {
-        setPanelPosition({ x: screenCoords.x, y: screenCoords.y });
-      }
-    }
-    setSelectedPoint(point);
-  };
+  if (error) {
+    return (
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-gray-900 text-white p-8 text-center">
+        <FiAlertTriangle size={48} className="text-red-500 mb-4" />
+        <h1 className="text-2xl font-semibold text-red-400">An Error Occurred</h1>
+        <p className="text-gray-400 mt-2 max-w-md">{error}</p>
+        <a href="/upload" className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-500">
+          Go to Upload Page
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full h-screen">
-      <div className="absolute top-4 left-4 z-10 rounded-md bg-black/50 p-4 text-white backdrop-blur-sm">
-        <h1 className="text-xl font-bold">DNA Origin Analysis</h1>
-        <p className="text-sm text-gray-300">Found {points.length} potential species origins.</p>
-      </div>
+    <div className="relative w-full h-screen bg-black">
+      <div className="absolute top-4 left-4 z-10 rounded-md bg-black/50 p-4 text-white backdrop-blur-sm max-w-sm">
+        <h1 className="text-xl font-bold">Species Distribution Analysis</h1>
 
-      {/* CHANGED: Panel now depends on selectedPoint, not hoveredPoint */}
-      {selectedPoint && (
-        <div
-          className="absolute z-20 w-64 rounded-lg border border-cyan-400/50 bg-gray-900/70 p-4 text-white shadow-lg backdrop-blur-lg transition-opacity duration-300"
-          style={{
-            left: panelPosition.x,
-            top: panelPosition.y,
-            transform: 'translate(20px, -50%)', // Offset from the beacon
-            pointerEvents: 'auto', // Allow interaction with the panel
-          }}
-        >
-          <button onClick={() => setSelectedPoint(null)} className="absolute top-2 right-2 text-gray-400 hover:text-white">
-            <FiX size={18} />
-          </button>
-          <h3 className="text-lg font-bold text-cyan-300">{selectedPoint.species}</h3>
-          <p className="text-sm text-gray-300">
-            Confidence Score: <span className="font-semibold text-yellow-400">{(selectedPoint.confidence * 100).toFixed(0)}%</span>
-          </p>
-          <a
-            href={selectedPoint.wiki}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block rounded-md bg-cyan-600/50 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-cyan-500/50"
-          >
-            Learn More
-          </a>
+        <div className="mt-4">
+          <label htmlFor="species-select" className="block text-sm font-medium text-gray-300">
+            Displaying Hotspots For
+          </label>
+          <div className="relative mt-1">
+            <select
+              id="species-select"
+              value={selectedSpecies}
+              onChange={(e) => setSelectedSpecies(e.target.value)}
+              className="w-full appearance-none rounded-md border-gray-600 bg-gray-800/80 py-2 pl-3 pr-10 text-base focus:border-cyan-500 focus:outline-none focus:ring-cyan-500 sm:text-sm"
+            >
+              {allGeoData.map(s => (
+                <option key={s.species}>{s.species}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+              <FiChevronDown className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
         </div>
-      )}
+
+        <button
+          onClick={() => router.push('/report')}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-blue-600/80 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500/80"
+        >
+          <FiBarChart2 /> View Analysis Insights
+        </button>
+      </div>
 
       <Globe
         ref={globeRef}
-        // --- Globe Appearance ---
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
         atmosphereColor="cyan"
         atmosphereAltitude={0.2}
 
-        // --- Species Beacons (replacing points) ---
-        pointsData={points}
-        pointThreeObject={(d: any) => {
-          const group = new THREE.Group();
-          const color = d.species === "Orca" ? 0x00ffff : d.species === "Yellowfin Tuna" ? 0xffa500 : 0x00ff00;
-          const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6 });
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.1, 16, 100), material);
-          ring.rotation.x = Math.PI / 2;
-          group.add(ring);
-          const cone = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 32), material);
-          cone.rotation.x = Math.PI / 2;
-          group.add(cone);
-          return group;
-        }}
-        pointThreeObjectUpdate={(obj: any, d: any) => {
-          const time = new Date().getTime();
-          const pulse = Math.sin(time / 500 + d.lat) * 0.5 + 0.5;
-          const scale = 0.5 + d.confidence * (0.5 + pulse * 0.5);
-          obj.scale.set(scale, scale, scale);
-          Object.assign(obj.position, globeRef.current?.getCoords(d.lat, d.lng, 0.01));
-        }}
+        heatmapData={heatmapPoints}
+        heatmapPointLat={p => p[0]}
+        heatmapPointLng={p => p[1]}
+        heatmapPointWeight={p => p[2]}
+        heatmapRadius={1.5}
+        heatmapColorSaturation={1.0}
 
-        // --- Animated Arcs ---
         arcsData={arcs}
         arcColor="color"
+        arcStroke="stroke"
         arcDashLength={0.4}
-        arcDashGap={0.1}
-        arcDashAnimateTime={2000}
-        arcStroke={0.5}
-
-        // --- Habitat Polygons ---
-        polygonsData={polygons}
-        polygonCapColor={() => "rgba(0, 100, 255, 0.2)"}
-        polygonSideColor={() => "rgba(0, 255, 255, 0.1)"}
-        polygonLabel={(poly: any) => `<b>${poly.name}</b>`}
-
-        // --- Interactivity ---
-        onPointClick={(d) => handlePointSelect(d as SpeciesPoint)} // CHANGED: Now uses click to select
-        onPointHover={() => {}} // REMOVED: Hover no longer controls the main panel
-        onGlobeClick={() => setSelectedPoint(null)} // NEW: Click the globe to deselect/close panel
+        arcDashGap={0.2}
+        arcDashAnimateTime={3000}
       />
     </div>
   );
 }
-

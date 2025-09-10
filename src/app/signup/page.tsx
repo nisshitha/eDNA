@@ -1,161 +1,131 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FaGoogle, FaApple } from 'react-icons/fa';
-import { FiEye, FiFiEyeOff } from 'react-icons/fi'; // Corrected import for FiEyeOff
+import { FiEye, FiEyeOff, FiArrowLeft } from 'react-icons/fi';
+import { useState } from 'react';
 
 export default function SignupPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // NEW: State for confirm password
-  const [userType, setUserType] = useState(''); // NEW: State for user type selection
-  const router = useRouter();
-
-  // Function to handle sign up (for now, just navigates to landing)
-  const handleSignUp = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real application, you would handle user registration here.
-    // For now, let's navigate to the landing page.
-    router.push('/upload');
-  };
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
   return (
-    <main className="relative h-screen w-screen font-sans">
+    <div className="flex h-screen w-screen bg-[#111827]"> {/* Dark background */}
+      {/* Left side: Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/sea.jpg')" }}
-        aria-hidden="true"
-      />
-      <div className="relative z-10 flex h-full items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-2xl bg-white/20 p-8 text-gray-800 shadow-lg backdrop-blur-md">
-          <h1 className="mb-8 text-center text-4xl" style={{ fontFamily: 'serif', letterSpacing: '0.2em' }}>
-            JOIN POCKET PAUSE
-          </h1>
+        className="hidden lg:block lg:w-1/2 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/three.jpg')" }}
+      >
+        {/* Back Arrow to Home */}
+        <Link href="/" legacyBehavior>
+          <a className="absolute top-8 left-8 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/75">
+            <FiArrowLeft size={20} />
+          </a>
+        </Link>
+      </div>
 
-          <form onSubmit={handleSignUp}>
-            {/* Mobile Number Field (Same as Login) */}
-            <div className="mb-4">
-              <label htmlFor="mobile" className="mb-1 block text-sm text-gray-700">Enter your mobile number</label>
-              <div className="flex items-center rounded-md bg-gray-200/50 p-2.5">
-                <span className="border-r border-gray-400 pr-3 text-gray-600">+91</span>
-                <input
-                  type="tel"
-                  id="mobile"
-                  placeholder="1712345678"
-                  className="w-full bg-transparent pl-3 text-gray-800 placeholder-gray-500 focus:outline-none"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Password Field (Same as Login) */}
-            <div className="mb-4"> {/* Changed from mb-2 to mb-4 for spacing */}
-              <label htmlFor="password" className="mb-1 block text-sm text-gray-700">Create Password</label>
-              <div className="relative flex items-center rounded-md bg-gray-200/50 p-2.5">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  placeholder="**********"
-                  className="w-full bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-gray-600"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-            </div>
-
-            {/* NEW: Confirm Password Field */}
-            <div className="mb-6"> {/* Increased margin bottom */}
-              <label htmlFor="confirmPassword" className="mb-1 block text-sm text-gray-700">Confirm Password</label>
-              <div className="relative flex items-center rounded-md bg-gray-200/50 p-2.5">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  id="confirmPassword"
-                  placeholder="**********"
-                  className="w-full bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 text-gray-600"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-            </div>
-
-            {/* NEW: User Type Selection */}
-            <div className="mb-6">
-              <label className="mb-2 block text-sm text-gray-700">Describe yourself as:</label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="userType"
-                    value="student"
-                    checked={userType === 'student'}
-                    onChange={(e) => setUserType(e.target.value)}
-                    className="form-radio h-4 w-4 text-black focus:ring-black"
-                  />
-                  <span className="ml-2 text-gray-700">Student</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="userType"
-                    value="professional"
-                    checked={userType === 'professional'}
-                    onChange={(e) => setUserType(e.target.value)}
-                    className="form-radio h-4 w-4 text-black focus:ring-black"
-                  />
-                  <span className="ml-2 text-gray-700">Professional</span>
-                </label>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="mt-6 w-full rounded-md bg-black py-3 text-lg font-semibold text-white transition hover:bg-gray-800"
-            >
-              Sign Up
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-700">
-            Already have an account?{' '}
-            <Link href="/" className="font-semibold hover:underline">
-              Sign In
-            </Link>
-          </p>
-          
-          <div className="my-6 text-center text-sm text-gray-600">
-            or
+      {/* Right side: Signup Form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
+        <div className="w-full max-w-sm">
+          {/* Logo at the top */}
+          <div className="mb-10 text-center text-white">
+            <h1 className="text-5xl font-bold">DeepSeq</h1>
           </div>
 
-          <div className="space-y-3">
-             {/* Social logins for consistency, though usually not on signup forms as primary action */}
-            <button
-              onClick={() => router.push('/upload')}
-              className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white/80 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50">
-              <FaGoogle /> Sign Up with Google
-            </button>
-            <button
-              onClick={() => router.push('/upload')}
-              className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white/80 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50">
-              <FaApple /> Sign Up with Apple
-            </button>
+          {/* Form container */}
+          <div className="rounded-lg bg-[#1F2937] p-8 shadow-2xl">
+            <h2 className="mb-2 text-2xl font-semibold text-white">Create your account</h2>
+            
+            <form className="mt-6 space-y-4">
+              {/* Username Input */}
+              <div>
+                <label htmlFor="username" className="text-sm font-medium text-gray-300">Username</label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  placeholder="Choose a username"
+                  className="mt-1 block w-full appearance-none rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+
+              {/* Email Input */}
+              <div>
+                <label htmlFor="email" className="text-sm font-medium text-gray-300">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  placeholder="Enter your email"
+                  className="mt-1 block w-full appearance-none rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+
+              {/* Password Input */}
+              <div>
+                <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
+                <div className="relative mt-1">
+                  <input
+                    id="password"
+                    name="password"
+                    type={passwordVisible ? 'text' : 'password'}
+                    required
+                    placeholder="Create a password"
+                    className="block w-full appearance-none rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  />
+                  <button type="button" onClick={() => setPasswordVisible(!passwordVisible)} className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    {passwordVisible ? <FiEyeOff className="h-5 w-5 text-gray-400" /> : <FiEye className="h-5 w-5 text-gray-400" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password Input */}
+              <div>
+                <label htmlFor="confirm-password" className="text-sm font-medium text-gray-300">Confirm Password</label>
+                <div className="relative mt-1">
+                  <input
+                    id="confirm-password"
+                    name="confirm-password"
+                    type={confirmPasswordVisible ? 'text' : 'password'}
+                    required
+                    placeholder="Confirm your password"
+                    className="block w-full appearance-none rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  />
+                  <button type="button" onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)} className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    {confirmPasswordVisible ? <FiEyeOff className="h-5 w-5 text-gray-400" /> : <FiEye className="h-5 w-5 text-gray-400" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sign Up Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                >
+                  Create Account
+                </button>
+              </div>
+            </form>
+
+            {/* Login Link */}
+            <p className="mt-6 text-center text-sm text-gray-400">
+              Already Have An Account?{' '}
+              <Link href="/login" legacyBehavior>
+                <a className="font-medium text-blue-400 hover:text-blue-300">Login</a>
+              </Link>
+            </p>
+          </div>
+          
+          {/* Logo at the bottom */}
+          <div className="mt-8 flex justify-end">
+             <svg className="h-6 w-6 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.592 1M12 8c-.112 0-.224.016-.335.035M2.004 15.197a4.5 4.5 0 011.026-.06C6.11 14.885 8.761 14 12 14c3.239 0 5.89.884 8.97.944a4.5 4.5 0 011.026.06l-.412 1.633a9.75 9.75 0 01-18.128 0l-.412-1.633zM12 21c-3.132 0-6.104-.633-8.875-1.761M12 21c3.132 0 6.104-.633 8.875-1.761M12 21v-3"></path></svg>
+             <span className="text-md font-bold text-gray-400">DEEPSEQ</span>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

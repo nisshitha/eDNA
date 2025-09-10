@@ -1,148 +1,142 @@
-'use client';
+"use client";
 
 import React, { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiUploadCloud, FiFileText, FiX } from 'react-icons/fi'; // Import icons
+import { FiUploadCloud, FiFileText, FiX, FiArrowLeft } from 'react-icons/fi';
 
-export default function LandingPage() {
+export default function UploadPage() {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle file selection from the file dialog
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedFile(event.target.files[0]);
+      setError(null);
     }
   };
 
-  // Trigger the hidden file input when the drop zone is clicked
-  const handleDropZoneClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleDropZoneClick = () => { fileInputRef.current?.click(); };
   
-  // Handle file drop
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
+    event.preventDefault(); event.stopPropagation(); setIsDragging(false);
     if (event.dataTransfer.files && event.dataTransfer.files[0]) {
       setSelectedFile(event.dataTransfer.files[0]);
+      setError(null);
     }
   };
   
-  // Handle drag over
-  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(true);
-  };
-  
-  // Handle drag leave
-  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
-  };
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => { event.preventDefault(); event.stopPropagation(); setIsDragging(true); };
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => { event.preventDefault(); event.stopPropagation(); setIsDragging(false); };
+  const removeFile = () => { setSelectedFile(null); };
 
-  // Remove the selected file
-  const removeFile = () => {
-    setSelectedFile(null);
-  };
-
-  // Navigate to the next page
-  const handleContinue = () => {
-    if (selectedFile) {
+  const handleContinue = async () => {
+    if (!selectedFile) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'An unknown error occurred.');
+      localStorage.setItem('analysisResult', JSON.stringify(result));
       router.push('/globe');
+    } catch (err: any) {
+      setError(err.message);
+      setIsLoading(false);
     }
   };
 
   return (
-    <main className="relative h-screen w-screen font-sans">
+    <div className="relative min-h-screen bg-gray-900 text-white overflow-hidden">
       {/* Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/sea.jpg')" }}
-        aria-hidden="true"
-      />
-      
-      {/* Centering Container */}
-      <div className="relative z-10 flex h-full items-center justify-center p-4">
-        {/* File Upload Modal */}
-        <div className="w-full max-w-lg rounded-lg bg-gray-100/90 p-8 text-gray-800 shadow-2xl backdrop-blur-md">
-          <h2 className="mb-4 text-xl font-bold text-gray-700">File Upload</h2>
+        className="absolute inset-0 z-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/one.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-black opacity-60"></div> 
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 bg-blue-900/80 backdrop-blur-sm shadow-lg">
+        <nav className="container mx-auto flex items-center justify-between p-4">
+          <div className="flex items-center space-x-2">
+            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.592 1M12 8c-.112 0-.224.016-.335.035M2.004 15.197a4.5 4.5 0 011.026-.06C6.11 14.885 8.761 14 12 14c3.239 0 5.89.884 8.97.944a4.5 4.5 0 011.026.06l-.412 1.633a9.75 9.75 0 01-18.128 0l-.412-1.633zM12 21c-3.132 0-6.104-.633-8.875-1.761M12 21c3.132 0 6.104-.633 8.875-1.761M12 21v-3"></path></svg>
+            <span className="text-xl font-bold">DEEPSEQ</span>
+          </div>
+          <div className="flex space-x-6">
+            <a href="#" className="flex items-center hover:text-blue-200">Home</a>
+            <a href="#" className="flex items-center hover:text-blue-200">About us</a>
+            <a href="#" className="flex items-center hover:text-blue-200">Help</a>
+          </div>
+        </nav>
+      </header>
+
+      {/* Back Arrow */}
+      <button onClick={() => router.back()} className="absolute top-24 left-8 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/75">
+          <FiArrowLeft size={20} />
+      </button>
+
+      {/* Main Content */}
+      <main className="relative z-10 flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
+        <div className="w-full max-w-xl rounded-lg bg-blue-900/80 p-8 text-white shadow-2xl backdrop-blur-md">
+          <h2 className="mb-6 text-xl font-bold text-center">File Upload</h2>
           
-          {/* Hidden File Input */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
-            accept="*" // Accepts any file as requested
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".fasta,.fastq,.fa,.fna,.csv,.xlsx" />
           
-          {/* Drop Zone */}
           <div
-            onClick={handleDropZoneClick}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            className={`flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed bg-gray-50 p-10 text-center transition-colors ${
-              isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+            onClick={handleDropZoneClick} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
+            className={`flex flex-col items-center justify-center rounded-md border-2 border-dashed bg-white/10 p-10 text-center transition-colors cursor-pointer ${
+              isDragging ? 'border-blue-300 bg-white/20' : 'border-gray-400'
             }`}
           >
             {selectedFile ? (
-              // Display when a file is selected
-              <div className="flex flex-col items-center text-gray-700">
+              <div className="flex flex-col items-center text-white">
                 <FiFileText className="mb-2 h-10 w-10" />
                 <p className="font-semibold">{selectedFile.name}</p>
-                <p className="text-sm text-gray-500">{selectedFile.type}</p>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent drop zone click event
-                    removeFile();
-                  }}
-                  className="mt-4 flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs text-red-600 hover:bg-red-200"
-                >
-                  <FiX /> Remove
-                </button>
+                  onClick={(e) => { e.stopPropagation(); removeFile(); }}
+                  className="mt-4 flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-300 hover:bg-red-500/40"
+                > <FiX /> Remove </button>
               </div>
             ) : (
-              // Display when no file is selected
-              <div className="flex flex-col items-center text-gray-500">
+              <div className="flex flex-col items-center text-gray-300">
                 <FiUploadCloud className="mb-2 h-10 w-10" />
-                <p className="font-semibold">Click or drag a file to this area to upload</p>
-                <p className="mt-2 text-xs">We accept any file type you provide.</p>
+                <p className="font-semibold">Click or drag file to this area to upload</p>
               </div>
             )}
           </div>
+
+          <div className="mt-4 text-center text-sm text-gray-300">
+            <p>Formats accepted are .csv and .xlsx</p>
+          </div>
           
-          <div className="mt-4 text-sm text-gray-600">
-            If you do not have a file, you can use the sample below.
-            <a href="#" className="ml-2 inline-block rounded-md bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300">
+          <div className="mt-6 text-center text-sm text-gray-300">
+            If you do not have a file you can use the sample below:
+            <a href="/sample.fasta" download className="ml-2 inline-block rounded-md bg-gray-600/50 px-3 py-1 font-semibold text-white hover:bg-gray-500/50">
               Download Sample Template
             </a>
           </div>
 
-          {/* Action Buttons */}
+          {error && <p className="mt-4 text-center text-sm text-red-400">{error}</p>}
+
           <div className="mt-8 flex justify-end space-x-4">
-            <button
-              onClick={() => router.back()} // Go back to the previous page
-              className="rounded-md px-6 py-2 font-semibold text-gray-600 transition hover:bg-gray-200"
-            >
+            <button onClick={() => router.back()} className="rounded-md bg-gray-600/50 px-6 py-2 font-semibold transition hover:bg-gray-500/50">
               Cancel
             </button>
             <button
-              onClick={handleContinue}
-              disabled={!selectedFile}
-              className="rounded-md bg-black px-6 py-2 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+              onClick={handleContinue} disabled={!selectedFile || isLoading}
+              className="flex items-center justify-center rounded-md bg-blue-600 px-6 py-2 font-semibold transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-gray-400"
             >
-              Continue
+              {isLoading ? 'Analyzing...' : 'Continue'}
             </button>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
