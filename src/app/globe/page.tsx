@@ -49,7 +49,7 @@ export default function GlobePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const globeRef = useRef<any>();
+  const globeRef = useRef<any>(null);
 
   useEffect(() => {
     try {
@@ -168,12 +168,14 @@ export default function GlobePage() {
         atmosphereColor="cyan"
         atmosphereAltitude={0.2}
 
-        heatmapData={heatmapPoints}
+        heatmapsData={[{
+          data: heatmapPoints,
+          radius: 1.5,
+          colorSaturation: 1.0
+        }]}
         heatmapPointLat={p => p[0]}
         heatmapPointLng={p => p[1]}
         heatmapPointWeight={p => p[2]}
-        heatmapRadius={1.5}
-        heatmapColorSaturation={1.0}
 
         arcsData={arcs}
         arcColor="color"
